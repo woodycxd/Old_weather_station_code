@@ -1,0 +1,136 @@
+#include <SD.h>
+//#include <SDUtil.h>
+#include <Wire.h>
+#include "RTClib.h"
+
+RTC_DS1307 RTC;
+Sd2Card card;
+SdVolume volume;
+SdFile root;
+File file;
+char name[] = "LOGGER00.CSV";
+int loopcount;
+
+
+// store error strings in flash to save RAM
+#define error(s) error_P(PSTR(s))
+
+void error_P(const char* str) {
+  PgmPrint("error: ");
+  SerialPrintln_P(str);
+  if (card.errorCode()) {
+    PgmPrint("SD error: ");
+    Serial.print(card.errorCode(), HEX);
+    Serial.print(',');
+    Serial.println(card.errorData(), HEX);
+  }
+  while(1);
+}
+
+int sensorPin = 0;    // select the input pin for the potentiometer
+int ledPin = 13;      // select the pin for the LED
+int sensorValue = 0;// variable to store the value coming from the sensor
+int temp_sensor=0;
+int sensor_temp_pin=1;
+int sensor_light_pin=2;
+int dig_temp_pin=7;
+int dig_light_pin = 6;
+int sensor_light=0;
+int pulse_pin=5;
+unsigned long duration;
+
+void setup() {
+  // declare the ledPin as an OUTPUT:
+  Serial.begin(57600);
+  Wire.begin();
+//  RTC.begin(DateTime(__DATE__, __TIME__));
+ // RTC.adjust(DateTime(__DATE__, __TIME__));
+  RTC.begin();
+RTC.adjust(DateTime(__DATE__,__TIME__));
+  delay(1000);
+  pinMode(dig_temp_pin,OUTPUT);
+  pinMode(pulse_pin,INPUT);
+  digitalWrite(dig_temp_pin,HIGH);
+  pinMode(dig_light_pin,OUTPUT);
+  digitalWrite(dig_light_pin,HIGH);
+  
+  pinMode(ledPin, OUTPUT);  
+  
+   // initialize the SD card
+  if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done");
+   
+  // open root directory
+ // if (!root.openRoot(volume)) error("openRoot");
+  
+  // create a new file
+
+ 
+    file = SD.open("logger.csv",FILE_WRITE);
+  
+  
+  Serial.print("Logging to: ");
+  Serial.println(name);
+}
+  // write header
+  //file.writeError = 0;
+
+
+void loop() {
+  // read the value from the sensor
+  DateTime now = RTC.now();
+  sensorValue = analogRead(sensorPin);
+  temp_sensor=analogRead(sensor_temp_pin);
+  sensor_light=analogRead(sensor_light_pin);
+  duration=pulseIn(pulse_pin,HIGH);
+  Serial.print("Baro ");
+ Serial.print(sensorValue);
+  Serial.print(";");
+  Serial.print("light level  ");
+  Serial.print(sensor_light);
+  Serial.print(";");
+  Serial.print(duration);
+  Serial.print(";");
+  Serial.print("Temp value  ");
+  Serial.print(temp_sensor);
+  Serial.print("Day  ");
+  Serial.print(now.day(),DEC);
+ Serial.print("Hour  ");
+  Serial.print(now.hour(),DEC);
+  Serial.print("Min  ");
+  Serial.print(now.minute(),DEC);
+  Serial.print("Sec");
+ Serial.println(now.second(),DEC); 
+
+file.print(sensorValue);
+  file.print(";");
+  file.print(temp_sensor);
+  file.print(";");
+  file.print(duration);
+  file.print(";");
+  file.print(now.day(),DEC);
+  file.print(";");
+  file.print(now.hour(),DEC);
+  file.print(";");
+  file.print(now.minute(),DEC);
+  file.print(";");
+file.println(now.second(),DEC);
+  // turn the ledPin on
+  //digitalWrite(ledPin, HIGH);  
+  file.close();
+ delay(59000);
+delay(1000); 
+//  flashled();
+file = SD.open("logger.csv",FILE_WRITE); 
+        
+                   
+}
+//void flashled(){
+ // digitalWrite(ledPin, HIGH);   // sets the LED on
+ // delay(59000);                  // waits for a second
+ // digitalWrite(ledPin, LOW);    // sets the LED off
+ // delay(1000);                  // waits for a second
+//}
